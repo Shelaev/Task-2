@@ -1,0 +1,75 @@
+import tkinter as tk
+from tkinter import filedialog
+import numpy as np
+from PIL import Image, ImageTk
+
+class ВізуалізаторФайлу:
+    def init(self, master):
+        self.master = master
+        self.master.title("Візуалізатор файлу")
+
+        self.ширина_канваса = 400
+        self.висота_канваса = 400
+
+        self.canvas = tk.Canvas(self.master, width=self.ширина_канваса, height=self.висота_канваса)
+        self.canvas.pack()
+
+        self.кнопка_завантаження = tk.Button(self.master, text="Завантажити файл", command=self.завантажити_файл)
+        self.кнопка_завантаження.pack()
+
+        self.кнопка_збереження_бінарного_масиву = tk.Button(self.master, text="Зберегти бінарний масив",
+                                                           command=self.зберегти_бінарний_масив)
+        self.кнопка_збереження_бінарного_масиву.pack()
+
+        self.кнопка_збереження_десяткового_масиву = tk.Button(self.master, text="Зберегти десятковий масив",
+                                                              command=self.зберегти_десятковий_масив)
+        self.кнопка_збереження_десяткового_масиву.pack()
+
+        self.бінарний_масив = np.array([])
+        self.десятковий_масив = np.array([])
+
+    def завантажити_файл(self):
+        шлях_до_файлу = filedialog.askopenfilename(filetypes=[("Бінарні файли", "*.bin")])
+        if шлях_до_файлу:
+            with open(шлях_до_файлу, 'rb') as файл:
+                self.бінарний_масив = np.fromfile(файл, dtype=np.uint8)
+
+            self.десятковий_масив = self.бінарний_масив.astype(int)
+
+            self.малювати_масив()
+
+    def малювати_масив(self):
+        if len(self.бінарний_масив) == 0:
+            return
+
+        розмір_пікселя = 8
+        ширина_зображення = min(self.ширина_канваса, len(self.бінарний_масив) * розмір_пікселя)
+        висота_зображення = min(self.висота_канваса, розмір_пікселя)
+
+        зображення_масиву = np.zeros((висота_зображення, ширина_зображення, 3), dtype=np.uint8)
+        for i in range(len(self.бінарний_масив)):
+            колір = (0, 0, 0) if self.бінарний_масив[i] == 1 else (255, 255, 255)
+            зображення_масиву[:, i * розмір_пікселя:(i + 1) * розмір_пікселя, :] = колір
+
+        зображення = Image.fromarray(зображення_масиву)
+        зображення = ImageTk.PhotoImage(зображення)
+
+        self.canvas.config(width=ширина_зображення, height=висота_зображення)
+        self.canvas.create_image(0, 0, anchor=tk.NW, image=зображення)
+        self.canvas.image = зображення
+
+    def зберегти_бінарний_масив(self):
+        шлях_до_файлу = filedialog.asksaveasfilename(defaultextension=".bin", filetypes=[("Бінарні файли", "*.bin")])
+        if шлях_до_файлу:
+            with open(шлях_до_файлу, 'wb') as файл:
+                self.бінарний_масив.tofile(файл)
+
+    def зберегти_десятковий_масив(self):
+        шлях_до_файлу = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Текстові файли", "*.txt")])
+        if шлях_до_файлу:
+            np.savetxt(шлях_до_файлу, self.десятковий_масив, fmt='%d')
+
+if name == "main":
+    корінь = tk.Tk()
+    програма = ВізуалізаторФайлу(корінь)
+    корінь.mainloop()
